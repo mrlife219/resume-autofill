@@ -36,6 +36,7 @@
     saveTimer: null,
     dirty: false,
     dialogTarget: "",
+    focusPath: "",
   };
 
   const els = {};
@@ -56,9 +57,13 @@
       state.sampleData = await loadSampleData();
       const stored = await chromeStorageGet(STORAGE_KEY);
       state.resumeData = mergeResumeData(state.sampleData, stored);
-      state.activeGroup = getGroupKeys()[0] || "";
+      const initialTarget = readInitialTarget();
+      const groupKeys = getGroupKeys();
+      state.activeGroup = groupKeys.includes(initialTarget.group) ? initialTarget.group : groupKeys[0] || "";
+      state.focusPath = initialTarget.path;
       render();
       setStatus("已加载资料", "ok");
+      focusInitialTarget();
     } catch (error) {
       console.error("[Resume Autofill CN] options init failed", error);
       setStatus("设置页加载失败", "err");
@@ -106,6 +111,59 @@
   function render() {
     renderNav();
     renderEditor();
+  }
+
+  function readInitialTarget() {
+    const params = new URLSearchParams(window.location.search);
+    const path = params.get("path") || "";
+    const group = params.get("group") || groupFromPath(path);
+    return { group, path };
+  }
+
+  function groupFromPath(path) {
+    const arrayMatch = String(path || "").match(/^(.+?)\[\d+\]/);
+    if (arrayMatch) return arrayMatch[1];
+    return String(path || "").split(".")[0] || "";
+  }
+
+  function focusInitialTarget() {
+    const path = state.focusPath;
+    if (!path) return;
+    state.focusPath = "";
+    setTimeout(() => revealEditorTarget(path), 0);
+  }
+
+  function revealEditorTarget(path) {
+    const control = findEditorElement("data-path", path, ".field-input, .field-textarea");
+    const row = findEditorElement("data-path", path, ".field-row");
+    const target = row || control || findEditorElement("data-target", pathToTarget(path), ".entry-card");
+
+    if (!target) {
+      setStatus("未找到指定编辑项", "warn");
+      return;
+    }
+
+    target.scrollIntoView({ block: "center", inline: "nearest" });
+    target.classList.add("target-highlight");
+    setTimeout(() => target.classList.remove("target-highlight"), 1800);
+
+    if (control) {
+      control.focus({ preventScroll: true });
+      if (typeof control.select === "function") control.select();
+    }
+
+    setStatus("已定位到编辑项", "ok");
+  }
+
+  function findEditorElement(attr, value, selector) {
+    if (!value) return null;
+    return Array.from(els.editor.querySelectorAll(selector)).find((element) => element.getAttribute(attr) === value) || null;
+  }
+
+  function pathToTarget(path) {
+    const arrayMatch = String(path || "").match(/^(.+\[\d+\])(?:\.|$)/);
+    if (arrayMatch) return arrayMatch[1];
+    return String(path || "").split(".")[0] || "";
   }
 
   function renderNav() {
@@ -189,7 +247,7 @@
       .join("");
 
     return `
-      <article class="entry-card">
+      <article class="entry-card" data-target="${escapeHtml(`${groupKey}[${index}]`)}">
         <header class="entry-header">
           <h3 class="entry-title">${escapeHtml(makeEntryTitle(groupKey, index, safeEntry))}</h3>
           <div class="entry-actions">
@@ -213,7 +271,7 @@
       : `<button class="delete-field" type="button" data-action="delete-field" data-path="${escapeHtml(path)}">删除</button>`;
 
     return `
-      <label class="field-row" data-wide="${wide}">
+      <label class="field-row" data-wide="${wide}" data-path="${escapeHtml(path)}">
         <span class="field-head">
           <span class="field-label">${escapeHtml(key)}</span>
           ${deleteButton}

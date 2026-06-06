@@ -303,6 +303,12 @@ h1 {
   overflow: hidden;
 }
 
+.field-row.target-highlight,
+.entry-card.target-highlight {
+  outline: 3px solid rgba(15, 118, 110, 0.26);
+  outline-offset: 3px;
+}
+
 .entry-header {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

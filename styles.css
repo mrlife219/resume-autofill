@@ -105,7 +105,8 @@
 .racn-icon-btn,
 .racn-text-btn,
 .racn-chip-btn,
-.racn-fill-btn {
+.racn-fill-btn,
+.racn-edit-btn {
   border: 1px solid var(--racn-border);
   background: #fff;
   color: var(--racn-text);
@@ -124,6 +125,20 @@
 .racn-icon-btn svg {
   width: 17px;
   height: 17px;
+}
+
+.racn-edit-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+
+.racn-edit-btn svg {
+  width: 15px;
+  height: 15px;
 }
 
 .racn-controls {
@@ -228,6 +243,7 @@
 .racn-fill-btn:hover,
 .racn-add-field-trigger:hover,
 .racn-text-btn:hover,
+.racn-edit-btn:hover,
 .racn-icon-btn:hover {
   border-color: var(--racn-primary);
 }
@@ -379,6 +395,13 @@
   color: var(--racn-muted);
 }
 
+.racn-item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+}
+
 .racn-fill-btn {
   width: 100%;
   border-radius: 8px;
@@ -405,10 +428,26 @@
 .racn-footer {
   border-top: 1px solid var(--racn-border);
   padding: 10px 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  background: #fbfcfb;
+}
+
+.racn-footer-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  background: #fbfcfb;
+}
+
+.racn-text-btn[data-danger="true"] {
+  border-color: rgba(185, 28, 28, 0.32);
+  color: var(--racn-error);
+}
+
+.racn-text-btn[data-danger="true"]:hover {
+  border-color: var(--racn-error);
 }
 
 .racn-file-input {

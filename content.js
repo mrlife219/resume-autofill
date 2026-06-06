@@ -394,6 +394,7 @@
   const ICONS = {
     fileText: iconSvg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M16 13H8"/><path d="M16 17H8"/><path d="M10 9H8"/>'),
     close: iconSvg('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+    edit: iconSvg('<path d="M17 3a2.85 2.85 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/>'),
   };
 
   async function chromeStorageGet(key) {
@@ -681,10 +682,12 @@
           </section>
         </main>
         <footer class="racn-footer">
-          <button class="racn-text-btn" type="button" data-action="settings">设置</button>
-          <button class="racn-text-btn" type="button" data-action="import">导入 JSON</button>
-          <button class="racn-text-btn" type="button" data-action="export">导出 JSON</button>
-          <button class="racn-text-btn" type="button" data-action="reset">恢复样例</button>
+          <div class="racn-footer-actions">
+            <button class="racn-text-btn" type="button" data-action="settings">编辑简历</button>
+            <button class="racn-text-btn" type="button" data-action="import">导入 JSON</button>
+            <button class="racn-text-btn" type="button" data-action="export">导出 JSON</button>
+          </div>
+          <button class="racn-text-btn" type="button" data-action="reset" data-danger="true">恢复样例</button>
           <input class="racn-file-input" type="file" accept="application/json,.json" />
         </footer>
       </aside>
@@ -732,6 +735,9 @@
       } else if (action === "fill-item") {
         const item = state.flatItems.find((candidate) => candidate.id === actionEl.getAttribute("data-id"));
         if (item) fillCurrentInput(item);
+      } else if (action === "edit-item") {
+        const item = state.flatItems.find((candidate) => candidate.id === actionEl.getAttribute("data-id"));
+        if (item) openResumeEditor(item.groupKey, item.path);
       } else if (action === "toggle-group") {
         const key = actionEl.getAttribute("data-key");
         if (state.collapsedGroups.has(key)) state.collapsedGroups.delete(key);
@@ -742,18 +748,13 @@
       } else if (action === "export") {
         exportResumeData();
       } else if (action === "reset") {
+        if (!confirm("确定恢复样例？当前自定义字段和值会被清除。")) return;
         await chromeStorageRemove(STORAGE_KEY);
         const sample = await loadSampleData();
         state.sampleData = sample;
         await setResumeData(cloneData(sample), "已恢复样例");
       } else if (action === "settings") {
-        chrome.runtime.sendMessage({ action: "open-options" }, (response) => {
-          if (chrome.runtime.lastError) {
-            setMessage("无法打开设置页", "err");
-            return;
-          }
-          if (!response?.ok) setMessage("无法打开设置页", "err");
-        });
+        openResumeEditor();
       }
     });
 
@@ -818,6 +819,16 @@
     link.click();
     setTimeout(() => URL.revokeObjectURL(url), 500);
     setMessage("已导出 JSON", "ok");
+  }
+
+  function openResumeEditor(group, path) {
+    chrome.runtime.sendMessage({ action: "open-options", group, path }, (response) => {
+      if (chrome.runtime.lastError) {
+        setMessage("无法打开编辑页", "err");
+        return;
+      }
+      if (!response?.ok) setMessage("无法打开编辑页", "err");
+    });
   }
 
   async function setResumeData(data, message) {
@@ -1147,13 +1158,16 @@
     const value = state.hideValues ? "已隐藏" : item.value || "空";
     const disabled = item.value ? "" : " disabled";
     return `
-      <button class="racn-fill-btn" type="button" data-action="fill-item" data-id="${escapeHtml(item.id)}"${disabled}>
-        <span class="racn-item-main">
-          <span class="racn-item-label">${escapeHtml(item.label)}</span>
-          <span class="racn-item-value">${escapeHtml(value)}</span>
-        </span>
-        <span class="racn-path">${escapeHtml(shortPath(item.path))}</span>
-      </button>
+      <div class="racn-item-row">
+        <button class="racn-fill-btn" type="button" data-action="fill-item" data-id="${escapeHtml(item.id)}"${disabled}>
+          <span class="racn-item-main">
+            <span class="racn-item-label">${escapeHtml(item.label)}</span>
+            <span class="racn-item-value">${escapeHtml(value)}</span>
+          </span>
+          <span class="racn-path">${escapeHtml(shortPath(item.path))}</span>
+        </button>
+        <button class="racn-edit-btn" type="button" data-action="edit-item" data-id="${escapeHtml(item.id)}" title="编辑此项" aria-label="编辑 ${escapeHtml(item.label)}">${ICONS.edit}</button>
+      </div>
     `;
   }
 
