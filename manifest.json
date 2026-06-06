@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Resume Autofill CN",
+  "version": "0.1.0",
+  "description": "Local-first resume autofill helper for Chinese job application forms.",
+  "permissions": ["activeTab", "storage"],
+  "options_page": "options.html",
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Resume Autofill CN"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["sample-structured-resume-cn.json"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

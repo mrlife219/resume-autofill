@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Resume Autofill CN 设置</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <div class="options-shell">
+      <header class="options-topbar">
+        <div>
+          <h1>Resume Autofill CN 设置</h1>
+          <p class="status" data-type=""></p>
+        </div>
+        <div class="topbar-actions">
+          <button class="text-btn" type="button" data-action="save">保存</button>
+          <button class="text-btn" type="button" data-action="import">导入 JSON</button>
+          <button class="text-btn" type="button" data-action="export">导出 JSON</button>
+          <button class="text-btn" type="button" data-action="reset">恢复样例</button>
+          <input class="file-input" type="file" accept="application/json,.json" />
+        </div>
+      </header>
+
+      <div class="options-layout">
+        <nav class="group-nav" aria-label="资料分组"></nav>
+        <main class="editor" aria-live="polite"></main>
+      </div>
+    </div>
+
+    <div class="dialog-backdrop" hidden>
+      <form class="field-dialog">
+        <header class="dialog-header">
+          <h2>新增字段</h2>
+          <button class="icon-btn" type="button" data-action="close-dialog" aria-label="关闭">×</button>
+        </header>
+        <label>
+          <span>保存位置</span>
+          <input class="dialog-target" type="text" disabled />
+        </label>
+        <label>
+          <span>字段名</span>
+          <input class="dialog-name" type="text" autocomplete="off" />
+        </label>
+        <label>
+          <span>字段值</span>
+          <textarea class="dialog-value" rows="5"></textarea>
+        </label>
+        <label>
+          <span>匹配词</span>
+          <input class="dialog-aliases" type="text" placeholder="多个词用逗号分隔" />
+        </label>
+        <footer class="dialog-actions">
+          <button class="text-btn" type="button" data-action="close-dialog">取消</button>
+          <button class="text-btn" type="submit" data-primary="true">保存字段</button>
+        </footer>
+      </form>
+    </div>
+
+    <script src="options.js"></script>
+  </body>
+</html>
