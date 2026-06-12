@@ -8,8 +8,10 @@
   const CUSTOM_META_KEY = "_customFieldMeta";
   const HIGH_CONFIDENCE_SCORE = 18;
   const TOGGLE_POSITION_KEY = "resumeAutofillCn.togglePosition";
+  const PANEL_POSITION_KEY = "resumeAutofillCn.panelPosition";
   const DRAG_THRESHOLD = 5;
   let justDragged = false;
+  let panelJustDragged = false;
 
   const GROUP_LABELS = {
     "基本信息": "基本信息",
@@ -743,6 +745,101 @@
     });
   }
 
+  function initPanelDrag(root) {
+    const panel = root.querySelector(".racn-panel");
+    const header = root.querySelector(".racn-header");
+    if (!panel || !header) return;
+
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let hasDragged = false;
+    let startTop = 0;
+    let startLeft = 0;
+
+    function getPosition(e) {
+      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onStart(e) {
+      // Don't drag if clicking on buttons/inputs inside header
+      if (e.target.closest("button, input")) return;
+      const pos = getPosition(e);
+      startX = pos.x;
+      startY = pos.y;
+      const rect = panel.getBoundingClientRect();
+      startTop = rect.top;
+      startLeft = rect.left;
+      hasDragged = false;
+      dragging = true;
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      const pos = getPosition(e);
+      const dx = pos.x - startX;
+      const dy = pos.y - startY;
+
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+        hasDragged = true;
+      }
+
+      if (!hasDragged) return;
+      e.preventDefault();
+
+      let newTop = startTop + dy;
+      let newLeft = startLeft + dx;
+
+      const pw = panel.offsetWidth;
+      const ph = panel.offsetHeight;
+      newTop = Math.max(0, Math.min(window.innerHeight - ph, newTop));
+      newLeft = Math.max(0, Math.min(window.innerWidth - pw, newLeft));
+
+      panel.style.position = "fixed";
+      panel.style.top = newTop + "px";
+      panel.style.left = newLeft + "px";
+      panel.style.right = "auto";
+      panel.style.bottom = "auto";
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+
+      if (hasDragged) {
+        panelJustDragged = true;
+        setTimeout(() => { panelJustDragged = false; }, 0);
+
+        const top = panel.style.top;
+        const left = panel.style.left;
+        if (top && left) {
+          chromeStorageSet(PANEL_POSITION_KEY, { top, left });
+        }
+        hasDragged = false;
+      }
+    }
+
+    header.addEventListener("mousedown", onStart);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onEnd);
+
+    header.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+
+    // Load saved position
+    chromeStorageGet(PANEL_POSITION_KEY).then((saved) => {
+      if (saved && saved.top && saved.left) {
+        panel.style.position = "fixed";
+        panel.style.top = saved.top;
+        panel.style.left = saved.left;
+        panel.style.right = "auto";
+        panel.style.bottom = "auto";
+      }
+    });
+  }
+
   function mount() {
     if (document.getElementById(ROOT_ID)) return;
 
@@ -789,6 +886,7 @@
     document.documentElement.appendChild(root);
     bindEvents(root);
     initDrag(root);
+    initPanelDrag(root);
   }
 
   function bindEvents(root) {
@@ -811,6 +909,7 @@
       const action = actionEl.getAttribute("data-action");
 
       if (action === "close") {
+        if (panelJustDragged) return;
         state.open = false;
         render();
       } else if (action === "jump-next") {

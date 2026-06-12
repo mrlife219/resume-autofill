@@ -56,6 +56,14 @@
   cursor: grabbing;
 }
 
+#racn-root.racn-dragging .racn-panel {
+  user-select: none;
+}
+
+#racn-root.racn-dragging .racn-header {
+  cursor: grabbing;
+}
+
 .racn-panel {
   position: fixed;
   top: 24px;
@@ -83,6 +91,8 @@
   padding: 14px 14px 10px;
   border-bottom: 1px solid var(--racn-border);
   background: #fbfcfb;
+  cursor: grab;
+  touch-action: none;
 }
 
 .racn-title {
