@@ -7,6 +7,9 @@
   const SAMPLE_FILE = "sample-structured-resume-cn.json";
   const CUSTOM_META_KEY = "_customFieldMeta";
   const HIGH_CONFIDENCE_SCORE = 18;
+  const TOGGLE_POSITION_KEY = "resumeAutofillCn.togglePosition";
+  const DRAG_THRESHOLD = 5;
+  let justDragged = false;
 
   const GROUP_LABELS = {
     "基本信息": "基本信息",
@@ -650,6 +653,96 @@
     return groups.flatMap((group) => group.subgroups.flatMap((subgroup) => subgroup.items));
   }
 
+  function initDrag(root) {
+    const toggle = root.querySelector(".racn-toggle");
+    if (!toggle) return;
+
+    let dragging = false;
+    let startX = 0;
+    let startY = 0;
+    let hasDragged = false;
+
+    function getPosition(e) {
+      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onStart(e) {
+      const pos = getPosition(e);
+      startX = pos.x;
+      startY = pos.y;
+      hasDragged = false;
+      dragging = true;
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      const pos = getPosition(e);
+      const dx = pos.x - startX;
+      const dy = pos.y - startY;
+
+      if (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD) {
+        hasDragged = true;
+      }
+
+      if (!hasDragged) return;
+      e.preventDefault();
+
+      const rect = root.getBoundingClientRect();
+      let newTop = rect.top + dy;
+      let newLeft = rect.left + dx;
+
+      const btnSize = 48;
+      newTop = Math.max(0, Math.min(window.innerHeight - btnSize, newTop));
+      newLeft = Math.max(0, Math.min(window.innerWidth - btnSize, newLeft));
+
+      root.style.position = "fixed";
+      root.style.top = newTop + "px";
+      root.style.left = newLeft + "px";
+      root.style.right = "auto";
+      root.style.bottom = "auto";
+
+      startX = pos.x;
+      startY = pos.y;
+    }
+
+    function onEnd() {
+      if (!dragging) return;
+      dragging = false;
+
+      if (hasDragged) {
+        justDragged = true;
+        setTimeout(() => { justDragged = false; }, 0);
+
+        const top = root.style.top;
+        const left = root.style.left;
+        if (top && left) {
+          chromeStorageSet(TOGGLE_POSITION_KEY, { top, left });
+        }
+        hasDragged = false;
+      }
+    }
+
+    toggle.addEventListener("mousedown", onStart);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onEnd);
+
+    toggle.addEventListener("touchstart", onStart, { passive: true });
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+
+    // Load saved position
+    chromeStorageGet(TOGGLE_POSITION_KEY).then((saved) => {
+      if (saved && saved.top && saved.left) {
+        root.style.position = "fixed";
+        root.style.top = saved.top;
+        root.style.left = saved.left;
+        root.style.right = "auto";
+        root.style.bottom = "auto";
+      }
+    });
+  }
+
   function mount() {
     if (document.getElementById(ROOT_ID)) return;
 
@@ -695,10 +788,12 @@
 
     document.documentElement.appendChild(root);
     bindEvents(root);
+    initDrag(root);
   }
 
   function bindEvents(root) {
     root.querySelector(".racn-toggle").addEventListener("click", () => {
+      if (justDragged) return;
       state.open = true;
       render();
     });

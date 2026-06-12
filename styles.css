@@ -35,15 +35,25 @@
   background: var(--racn-primary);
   color: #fff;
   box-shadow: var(--racn-shadow);
-  cursor: pointer;
+  cursor: grab;
   display: grid;
   place-items: center;
   padding: 0;
+  touch-action: none;
 }
 
 .racn-toggle svg {
   width: 23px;
   height: 23px;
+  pointer-events: none;
+}
+
+#racn-root.racn-dragging {
+  user-select: none;
+}
+
+#racn-root.racn-dragging .racn-toggle {
+  cursor: grabbing;
 }
 
 .racn-panel {
